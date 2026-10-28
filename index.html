@@ -1,0 +1,2505 @@
+<!doctype html>
+<html lang="ko">
+    <head>
+        <meta charset="utf-8" />
+        <meta
+            name="viewport"
+            content="width=device-width, initial-scale=1, viewport-fit=cover"
+        />
+        <title>AI 스포츠 캐스터</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap"
+            rel="stylesheet"
+        />
+        <style>
+            :root {
+                --bg: #0b1730;
+                --panel: #122347;
+                --panel2: #183061;
+                --line: #24407a;
+                --ink: #ffffff;
+                --muted: #a9b8d6;
+                --mint: #3ee6c1;
+                --mintInk: #062a24;
+                --red: #ff4d5e;
+                --amber: #ffc24d;
+                --capSize: 44px;
+                --capBg: rgba(18, 35, 71, 0.92);
+                color-scheme: dark;
+                box-sizing: border-box;
+                padding-top: env(safe-area-inset-top, 0px);
+                padding-bottom: env(safe-area-inset-bottom, 0px);
+            }
+            @media (prefers-color-scheme: dark) {
+                :root:not([data-theme="light"]) {
+                    --bg: #0b1730;
+                    --panel: #122347;
+                    --ink: #ffffff;
+                }
+            }
+            :root[data-theme="dark"] {
+                --bg: #0b1730;
+            }
+            *,
+            *::before,
+            *::after {
+                box-sizing: inherit;
+            }
+            html,
+            body {
+                height: 100%;
+                margin: 0;
+            }
+            html {
+                scroll-padding-top: env(safe-area-inset-top, 0px);
+            }
+            body {
+                background: var(--bg);
+                color: var(--ink);
+                font-family:
+                    "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic",
+                    system-ui, sans-serif;
+                overflow: hidden;
+            }
+            button,
+            select,
+            input {
+                font: inherit;
+                color: inherit;
+            }
+            :focus-visible {
+                outline: 3px solid var(--mint);
+                outline-offset: 2px;
+            }
+            [hidden] {
+                display: none !important;
+            }
+
+            .app {
+                height: 100%;
+                display: flex;
+                flex-direction: column;
+                gap: 12px;
+                padding: 12px 16px 14px;
+            }
+            header {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 12px;
+                min-height: 44px;
+            }
+            .brand {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                font-weight: 900;
+                font-size: 22px;
+                letter-spacing: -0.01em;
+            }
+            .brand svg {
+                color: var(--mint);
+            }
+            .sport {
+                font-size: 14px;
+                font-weight: 700;
+                color: var(--mintInk);
+                background: var(--mint);
+                border-radius: 99px;
+                padding: 3px 12px;
+            }
+            .hright {
+                display: flex;
+                align-items: center;
+                gap: 14px;
+                font-size: 15px;
+            }
+            .pill {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                font-weight: 700;
+            }
+            .pill i {
+                width: 10px;
+                height: 10px;
+                border-radius: 50%;
+                background: var(--muted);
+            }
+            .pill[data-s="live"] i {
+                background: var(--mint);
+                box-shadow: 0 0 10px var(--mint);
+            }
+            .pill[data-s="busy"] i {
+                background: var(--amber);
+                animation: blink 1s infinite;
+            }
+            .pill[data-s="err"] i {
+                background: var(--red);
+            }
+            .pill[data-s="pause"] i {
+                background: var(--amber);
+            }
+            @keyframes blink {
+                50% {
+                    opacity: 0.3;
+                }
+            }
+            .lat {
+                color: var(--muted);
+                font-size: 13px;
+                font-variant-numeric: tabular-nums;
+            }
+            .iconbtn {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                background: none;
+                border: 0;
+                color: var(--muted);
+                cursor: pointer;
+                padding: 6px 8px;
+                border-radius: 10px;
+                font-weight: 600;
+            }
+            .iconbtn:hover {
+                color: var(--ink);
+                background: var(--panel);
+            }
+
+            main {
+                flex: 1;
+                min-height: 0;
+                display: grid;
+                grid-template-columns: minmax(0, 7fr) minmax(260px, 3fr);
+                gap: 14px;
+            }
+            .stage {
+                position: relative;
+                background: #000;
+                border-radius: 18px;
+                overflow: hidden;
+                min-height: 0;
+            }
+            .stage video {
+                position: absolute;
+                inset: 0;
+                width: 100%;
+                height: 100%;
+                object-fit: contain;
+                background: #000;
+            }
+            .stage canvas {
+                position: absolute;
+                inset: 0;
+                width: 100%;
+                height: 100%;
+                pointer-events: none;
+            }
+            .badge {
+                position: absolute;
+                top: 14px;
+                left: 14px;
+                font-weight: 900;
+                font-size: 15px;
+                padding: 4px 12px;
+                border-radius: 8px;
+                background: var(--red);
+                color: #fff;
+                display: flex;
+                gap: 6px;
+                align-items: center;
+                z-index: 2;
+            }
+            .badge.file {
+                background: var(--mint);
+                color: var(--mintInk);
+            }
+            .badge::before {
+                content: "";
+                width: 8px;
+                height: 8px;
+                border-radius: 50%;
+                background: currentColor;
+            }
+            .fname {
+                position: absolute;
+                top: 16px;
+                right: 16px;
+                font-size: 13px;
+                color: #fff;
+                background: rgba(0, 0, 0, 0.45);
+                padding: 3px 10px;
+                border-radius: 8px;
+                z-index: 2;
+                max-width: 50%;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+            .empty {
+                position: absolute;
+                inset: 0;
+                display: grid;
+                place-content: center;
+                justify-items: center;
+                gap: 18px;
+                text-align: center;
+                background: radial-gradient(
+                    circle at 50% 40%,
+                    #16305f,
+                    #0a1428 70%
+                );
+            }
+            .empty h2 {
+                margin: 0;
+                font-size: 28px;
+                font-weight: 900;
+            }
+            .empty p {
+                margin: 0;
+                color: var(--muted);
+                font-size: 16px;
+            }
+            .empty .row {
+                display: flex;
+                gap: 12px;
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+            .court {
+                opacity: 0.25;
+                width: 220px;
+            }
+
+            .side {
+                background: var(--panel);
+                border-radius: 18px;
+                padding: 18px;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 10px;
+                min-height: 0;
+                overflow: hidden;
+            }
+            .side h3 {
+                align-self: flex-start;
+                margin: 0;
+                font-size: 22px;
+                font-weight: 900;
+            }
+            .charbox {
+                flex: 1;
+                min-height: 0;
+                width: 100%;
+                display: grid;
+                place-items: center;
+                position: relative;
+            }
+            .charbox svg {
+                width: 100%;
+                max-width: 260px;
+                height: 100%;
+                max-height: 300px;
+                filter: drop-shadow(0 10px 30px rgba(62, 230, 193, 0.15));
+            }
+            .char-body {
+                transform-origin: 50% 90%;
+                animation: bob 3.2s ease-in-out infinite;
+            }
+            @keyframes bob {
+                50% {
+                    transform: translateY(-6px);
+                }
+            }
+            .mouth {
+                transform-box: fill-box;
+                transform-origin: center;
+                transition: transform 0.08s;
+            }
+            .talk .mouth {
+                animation: mouth 0.22s infinite alternate;
+            }
+            @keyframes mouth {
+                from {
+                    transform: scaleY(0.25);
+                }
+                to {
+                    transform: scaleY(1.25);
+                }
+            }
+            .talk .glow {
+                opacity: 1;
+            }
+            .glow {
+                opacity: 0;
+                transition: opacity 0.3s;
+            }
+            .wave {
+                display: flex;
+                align-items: center;
+                gap: 4px;
+                height: 40px;
+            }
+            .wave i {
+                width: 4px;
+                height: 6px;
+                border-radius: 3px;
+                background: var(--mint);
+                opacity: 0.5;
+            }
+            .talk ~ .wave i,
+            .side.talking .wave i {
+                animation: wv 0.5s ease-in-out infinite alternate;
+                opacity: 1;
+            }
+            @keyframes wv {
+                from {
+                    height: 6px;
+                }
+                to {
+                    height: 36px;
+                }
+            }
+            .cstate {
+                color: var(--muted);
+                font-size: 15px;
+                min-height: 22px;
+                text-align: center;
+            }
+            .dots::after {
+                content: "";
+                animation: dots 1.2s steps(4) infinite;
+            }
+            @keyframes dots {
+                0% {
+                    content: "";
+                }
+                25% {
+                    content: ".";
+                }
+                50% {
+                    content: "..";
+                }
+                75% {
+                    content: "...";
+                }
+            }
+            .btn {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                gap: 8px;
+                border: 1px solid var(--line);
+                background: var(--panel2);
+                border-radius: 12px;
+                padding: 10px 18px;
+                cursor: pointer;
+                font-weight: 700;
+                font-size: 16px;
+                white-space: nowrap;
+            }
+            .btn:hover:not(:disabled) {
+                border-color: var(--mint);
+            }
+            .btn:disabled {
+                opacity: 0.45;
+                cursor: not-allowed;
+            }
+            .btn.primary {
+                background: var(--mint);
+                border-color: var(--mint);
+                color: var(--mintInk);
+                font-weight: 900;
+            }
+            .btn.big {
+                padding: 14px 26px;
+                font-size: 18px;
+            }
+            .btn.sm {
+                padding: 6px 12px;
+                font-size: 14px;
+            }
+
+            .caption {
+                background: var(--capBg);
+                border-radius: 16px;
+                padding: 12px 18px 12px 22px;
+                display: flex;
+                align-items: center;
+                gap: 14px;
+                position: relative;
+                min-height: calc(var(--capSize) * 2.4 + 34px);
+            }
+            .caption::before {
+                content: "";
+                position: absolute;
+                left: 0;
+                top: 14px;
+                bottom: 14px;
+                width: 6px;
+                border-radius: 0 6px 6px 0;
+                background: var(--mint);
+            }
+            .capwrap {
+                flex: 1;
+                min-width: 0;
+            }
+            .caplabel {
+                color: var(--mint);
+                font-weight: 700;
+                font-size: 15px;
+                display: flex;
+                gap: 10px;
+                align-items: center;
+            }
+            .caplabel .prog {
+                color: var(--muted);
+                font-weight: 500;
+            }
+            .captext {
+                font-size: var(--capSize);
+                font-weight: 900;
+                line-height: 1.2;
+                letter-spacing: -0.01em;
+                display: -webkit-box;
+                -webkit-line-clamp: 2;
+                -webkit-box-orient: vertical;
+                overflow: hidden;
+                word-break: keep-all;
+                overflow-wrap: anywhere;
+                outline: none;
+            }
+            .captext[contenteditable="true"] {
+                display: block;
+                background: rgba(255, 255, 255, 0.06);
+                border-radius: 8px;
+                padding: 0 6px;
+                -webkit-line-clamp: unset;
+            }
+            .captext.fade {
+                animation: capin 0.35s ease-out;
+            }
+            @keyframes capin {
+                from {
+                    opacity: 0;
+                    transform: translateY(8px);
+                }
+            }
+            .capbtns {
+                display: flex;
+                flex-direction: column;
+                gap: 6px;
+                align-items: flex-end;
+            }
+
+            .controls {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                flex-wrap: wrap;
+            }
+            .controls .grow {
+                flex: 1;
+            }
+            .seg {
+                display: inline-flex;
+                background: var(--panel);
+                border: 1px solid var(--line);
+                border-radius: 12px;
+                padding: 3px;
+            }
+            .seg button {
+                background: none;
+                border: 0;
+                border-radius: 9px;
+                padding: 8px 14px;
+                cursor: pointer;
+                font-weight: 700;
+                color: var(--muted);
+            }
+            .seg button[aria-pressed="true"] {
+                background: var(--panel2);
+                color: var(--ink);
+                box-shadow: inset 0 0 0 1px var(--mint);
+            }
+            .seg button:disabled {
+                opacity: 0.4;
+                cursor: not-allowed;
+            }
+
+            /* drawer */
+            .scrim {
+                position: fixed;
+                inset: 0;
+                background: rgba(0, 0, 0, 0.45);
+                z-index: 20;
+            }
+            .drawer {
+                position: fixed;
+                top: 0;
+                right: 0;
+                bottom: 0;
+                width: min(440px, 100%);
+                background: var(--panel);
+                z-index: 21;
+                overflow: auto;
+                padding: calc(18px + env(safe-area-inset-top, 0px)) 22px
+                    calc(30px + env(safe-area-inset-bottom, 0px));
+                display: flex;
+                flex-direction: column;
+                gap: 18px;
+                box-shadow: -20px 0 40px rgba(0, 0, 0, 0.4);
+            }
+            .drawer h2 {
+                margin: 0;
+                font-size: 22px;
+                font-weight: 900;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+            .drawer section {
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+                border-top: 1px solid var(--line);
+                padding-top: 14px;
+            }
+            .drawer h3 {
+                margin: 0;
+                font-size: 17px;
+                color: var(--mint);
+            }
+            .f {
+                display: flex;
+                flex-direction: column;
+                gap: 5px;
+                font-size: 14px;
+                color: var(--muted);
+            }
+            .f input[type="text"],
+            .f input[type="password"],
+            .f select {
+                background: var(--bg);
+                border: 1px solid var(--line);
+                border-radius: 10px;
+                padding: 9px 12px;
+                color: var(--ink);
+                font-size: 15px;
+            }
+            .f input[type="range"] {
+                accent-color: var(--mint);
+            }
+            .chk {
+                display: flex;
+                gap: 8px;
+                align-items: center;
+                font-size: 15px;
+                cursor: pointer;
+            }
+            .chk input {
+                accent-color: var(--mint);
+                width: 18px;
+                height: 18px;
+            }
+            .note {
+                font-size: 13px;
+                color: var(--muted);
+                line-height: 1.55;
+                margin: 0;
+            }
+            .msg {
+                font-size: 14px;
+                line-height: 1.5;
+                margin: 0;
+                white-space: pre-wrap;
+            }
+            .msg.ok {
+                color: var(--mint);
+            }
+            .msg.bad {
+                color: #ff8a95;
+            }
+            .chars {
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 8px;
+            }
+            .chars button {
+                background: var(--bg);
+                border: 2px solid var(--line);
+                border-radius: 12px;
+                padding: 8px 4px 6px;
+                cursor: pointer;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 2px;
+                font-size: 13px;
+                font-weight: 700;
+            }
+            .chars button[aria-pressed="true"] {
+                border-color: var(--mint);
+            }
+            .chars svg {
+                width: 64px;
+                height: 64px;
+            }
+
+            .toast {
+                position: fixed;
+                left: 50%;
+                top: 70px;
+                transform: translateX(-50%);
+                background: #2a1420;
+                border: 1px solid var(--red);
+                color: #fff;
+                border-radius: 12px;
+                padding: 12px 16px;
+                z-index: 30;
+                display: flex;
+                gap: 12px;
+                align-items: center;
+                max-width: min(680px, 92vw);
+                font-size: 15px;
+                box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+            }
+            .toast.info {
+                background: #0f2e2a;
+                border-color: var(--mint);
+            }
+            .modal {
+                position: fixed;
+                inset: 0;
+                display: grid;
+                place-items: center;
+                z-index: 40;
+                background: rgba(0, 0, 0, 0.55);
+                padding: 20px;
+            }
+            .modal > div {
+                background: var(--panel);
+                border-radius: 16px;
+                padding: 24px;
+                max-width: 520px;
+                display: flex;
+                flex-direction: column;
+                gap: 14px;
+            }
+            .modal h3 {
+                margin: 0;
+                font-size: 20px;
+            }
+            .modal p {
+                margin: 0;
+                color: var(--muted);
+                line-height: 1.6;
+            }
+
+            /* exhibition mode */
+            .exhibit .app {
+                padding: 10px;
+            }
+            .exhibit.idle .controls,
+            .exhibit.idle header .hright {
+                opacity: 0;
+                pointer-events: none;
+            }
+            .exhibit .controls,
+            .exhibit header .hright {
+                transition: opacity 0.4s;
+            }
+            .exhibit.idle {
+                cursor: none;
+            }
+
+            @media (max-width: 900px) {
+                body {
+                    overflow: auto;
+                }
+                .app {
+                    height: auto;
+                    min-height: 100%;
+                }
+                main {
+                    grid-template-columns: 1fr;
+                }
+                .stage {
+                    aspect-ratio: 16/9;
+                }
+                .side {
+                    flex-direction: row;
+                    flex-wrap: wrap;
+                    justify-content: center;
+                }
+                .charbox {
+                    height: 180px;
+                    flex: none;
+                }
+                :root {
+                    --capSize: 30px;
+                }
+            }
+            @media (prefers-reduced-motion: reduce) {
+                .char-body {
+                    animation: none;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <div class="app">
+            <header>
+                <div class="brand">
+                    <svg
+                        width="34"
+                        height="34"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        aria-hidden="true"
+                    >
+                        <circle cx="12" cy="12" r="2.2" fill="currentColor" />
+                        <path
+                            d="M8.5 8.5a5 5 0 0 0 0 7M15.5 8.5a5 5 0 0 1 0 7M5.6 5.6a9 9 0 0 0 0 12.8M18.4 5.6a9 9 0 0 1 0 12.8"
+                        />
+                    </svg>
+                    AI 스포츠 캐스터 <span class="sport">배드민턴</span>
+                </div>
+                <div class="hright">
+                    <span class="lat" id="lat"></span>
+                    <span class="pill" id="pill" data-s="idle"
+                        ><i></i><span id="pillTxt">입력 대기</span></span
+                    >
+                    <button
+                        class="iconbtn"
+                        id="fsBtn"
+                        title="전체화면 (전시 모드)"
+                    >
+                        <svg
+                            width="20"
+                            height="20"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                        >
+                            <path
+                                d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"
+                            /></svg
+                        >전시 모드
+                    </button>
+                    <button class="iconbtn" id="setBtn">
+                        <svg
+                            width="20"
+                            height="20"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                        >
+                            <circle cx="12" cy="12" r="3" />
+                            <path
+                                d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"
+                            /></svg
+                        >설정
+                    </button>
+                </div>
+            </header>
+
+            <main>
+                <div class="stage" id="stage">
+                    <video id="vid" playsinline></video>
+                    <canvas id="marks"></canvas>
+                    <span class="badge" id="badge" hidden>LIVE</span>
+                    <span class="fname" id="fname" hidden></span>
+                    <div class="empty" id="empty">
+                        <svg
+                            class="court"
+                            viewBox="0 0 220 120"
+                            fill="none"
+                            stroke="#3EE6C1"
+                            stroke-width="3"
+                        >
+                            <rect x="4" y="4" width="212" height="112" rx="4" />
+                            <line x1="110" y1="4" x2="110" y2="116" />
+                            <line x1="4" y1="20" x2="216" y2="20" />
+                            <line x1="4" y1="100" x2="216" y2="100" />
+                            <line x1="78" y1="20" x2="78" y2="100" />
+                            <line x1="142" y1="20" x2="142" y2="100" />
+                        </svg>
+                        <h2>배드민턴 경기를 보여 주세요</h2>
+                        <p>
+                            영상 파일을 고르거나 웹캠을 켜면 AI가 중계를
+                            시작해요.
+                        </p>
+                        <div class="row">
+                            <button class="btn primary big" data-act="pick">
+                                영상 선택</button
+                            ><button class="btn big" data-act="cam">
+                                웹캠 켜기
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <aside class="side" id="side">
+                    <h3>AI 해설자</h3>
+                    <div class="charbox" id="charbox"></div>
+                    <div class="wave" id="wave" aria-hidden="true"></div>
+                    <div class="cstate" id="cstate">준비됐어요</div>
+                    <button class="btn sm" id="charBtn">캐릭터 변경</button>
+                </aside>
+            </main>
+
+            <div class="caption" id="caption">
+                <div class="capwrap">
+                    <div class="caplabel">
+                        <span id="capLabel">실시간 중계</span
+                        ><span class="prog" id="capProg"></span>
+                    </div>
+                    <div class="captext" id="captext">
+                        영상이나 웹캠을 켜고 중계를 시작해 보세요.
+                    </div>
+                </div>
+                <div class="capbtns">
+                    <button class="btn sm" id="editBtn" title="자막 직접 수정">
+                        ✎ 수정
+                    </button>
+                    <button class="btn sm" id="autoBtn" hidden>
+                        자동 자막으로
+                    </button>
+                </div>
+            </div>
+
+            <div class="controls" id="controls">
+                <button class="btn" data-act="pick">▶ 영상 선택</button>
+                <button class="btn" data-act="cam" id="camBtn">
+                    ● 웹캠 켜기
+                </button>
+                <div class="seg" role="group" aria-label="중계 방식">
+                    <button id="mRt" aria-pressed="true">실시간 중계</button>
+                    <button id="mGen" aria-pressed="false">
+                        미리 생성 중계
+                    </button>
+                </div>
+                <button class="btn primary big" id="mainBtn" disabled>
+                    중계 시작
+                </button>
+                <button class="btn" id="stopBtn" disabled>■ 종료</button>
+                <span class="grow"></span>
+                <button class="btn" id="voiceBtn">🔊 음성 켜짐</button>
+                <button class="btn" id="capSetBtn">CC 자막 설정</button>
+            </div>
+        </div>
+
+        <input type="file" id="file" accept="video/*" hidden />
+        <video id="scan" muted playsinline preload="auto" hidden></video>
+
+        <div class="scrim" id="scrim" hidden></div>
+        <aside class="drawer" id="drawer" hidden aria-label="설정">
+            <h2>설정 <button class="btn sm" id="closeSet">닫기</button></h2>
+
+            <section>
+                <h3>Gemini 연결</h3>
+                <label class="f"
+                    >API 키<input
+                        type="password"
+                        id="key"
+                        autocomplete="off"
+                        spellcheck="false"
+                        placeholder="Google AI Studio에서 받은 키"
+                /></label>
+                <label class="chk"
+                    ><input type="checkbox" id="remember" /> 이 브라우저에 키
+                    기억하기</label
+                >
+                <div style="display: flex; gap: 8px; flex-wrap: wrap">
+                    <button class="btn sm" id="testKey">연결 확인</button
+                    ><button class="btn sm" id="forgetKey">키 지우기</button>
+                </div>
+                <p class="msg" id="keyMsg"></p>
+                <label class="f"
+                    >모델<input
+                        type="text"
+                        id="model"
+                        value="gemini-3.8-flash"
+                        spellcheck="false"
+                /></label>
+                <label class="f"
+                    >분석 간격 <span id="ivOut">2.5초</span
+                    ><input
+                        type="range"
+                        id="iv"
+                        min="1.5"
+                        max="8"
+                        step="0.5"
+                        value="2.5"
+                /></label>
+                <p class="note">
+                    현재 화면이 분석을 위해 Google Gemini로 전송돼요. 앱은
+                    영상을 따로 저장하지 않아요. 실시간 중계는 분석 시간 때문에
+                    몇 초 늦을 수 있어요. 지연 없이 보여 주려면 영상 파일로
+                    「미리 생성 중계」를 쓰세요.
+                </p>
+                <p class="note" id="claudeNote" hidden>
+                    Claude 화면에서는 키 없이 「미리 생성 중계」를 Claude가 만들
+                    수 있어요. 실시간 중계와 웹캠은 HTML 파일을 내려받아
+                    크롬에서 Gemini 키로 써 주세요.
+                </p>
+            </section>
+
+            <section>
+                <h3>중계 스타일</h3>
+                <div class="seg" role="group" id="styleSeg">
+                    <button data-v="hype" aria-pressed="true">
+                        활기찬 중계
+                    </button>
+                    <button data-v="calm" aria-pressed="false">
+                        차분한 해설
+                    </button>
+                    <button data-v="edu" aria-pressed="false">
+                        교육형 해설
+                    </button>
+                </div>
+                <label class="chk"
+                    ><input type="checkbox" id="markOn" checked /> 영상에 주요
+                    부분 표시</label
+                >
+            </section>
+
+            <section>
+                <h3>목소리</h3>
+                <label class="chk"
+                    ><input type="checkbox" id="voiceOn" checked /> 음성으로
+                    읽기</label
+                >
+                <label class="f">목소리<select id="voiceSel"></select></label>
+                <label class="f"
+                    >말하기 속도 <span id="rateOut">1.1</span
+                    ><input
+                        type="range"
+                        id="rate"
+                        min="0.7"
+                        max="1.6"
+                        step="0.1"
+                        value="1.1"
+                /></label>
+                <label class="f"
+                    >음량 <span id="volOut">100%</span
+                    ><input
+                        type="range"
+                        id="vol"
+                        min="0"
+                        max="1"
+                        step="0.1"
+                        value="1"
+                /></label>
+                <button class="btn sm" id="voiceTest">목소리 들어 보기</button>
+                <p class="note" id="voiceNote"></p>
+            </section>
+
+            <section>
+                <h3>캐릭터</h3>
+                <div class="chars" id="chars"></div>
+            </section>
+
+            <section id="capSection">
+                <h3>자막</h3>
+                <label class="f"
+                    >글자 크기 <span id="capOut">44</span
+                    ><input
+                        type="range"
+                        id="capSize"
+                        min="28"
+                        max="80"
+                        step="2"
+                        value="44"
+                /></label>
+                <label class="f"
+                    >배경 진하기 <span id="bgOut">92%</span
+                    ><input
+                        type="range"
+                        id="capBg"
+                        min="0"
+                        max="1"
+                        step="0.05"
+                        value="0.92"
+                /></label>
+                <label class="chk"
+                    ><input type="checkbox" id="capShow" checked /> 자막
+                    보이기</label
+                >
+                <label class="chk"
+                    ><input type="checkbox" id="capLock" /> 직접 수정한 자막
+                    유지</label
+                >
+                <button class="btn sm" id="capReset">자막 기본값으로</button>
+            </section>
+
+            <section>
+                <h3>저장되는 것</h3>
+                <p class="note">
+                    캐릭터, 중계 스타일, 목소리, 자막, 분석 간격은 이 브라우저에
+                    저장돼요. API 키는 「기억하기」를 켰을 때만 저장돼요. 영상은
+                    저장하지 않아요.
+                </p>
+                <button class="btn sm" id="resetAll">설정 모두 초기화</button>
+            </section>
+        </aside>
+
+        <div class="toast" id="toast" hidden>
+            <span id="toastTxt"></span
+            ><button class="btn sm" id="toastBtn" hidden>다시 시도</button
+            ><button class="btn sm" id="toastX">닫기</button>
+        </div>
+        <div class="modal" id="consent" hidden>
+            <div>
+                <h3>중계를 시작하기 전에</h3>
+                <p>
+                    AI가 해설하려면 경기 화면이 Google Gemini(또는 Claude)로
+                    전송돼요. 앱은 영상을 저장하지 않아요. 사람 얼굴이 나오는
+                    영상은 촬영 대상의 동의를 받은 것만 써 주세요.
+                </p>
+                <div
+                    style="display: flex; gap: 10px; justify-content: flex-end"
+                >
+                    <button class="btn" id="consentNo">취소</button
+                    ><button class="btn primary" id="consentYes">
+                        확인하고 시작
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            "use strict";
+            const $ = (s) => document.querySelector(s),
+                $$ = (s) => [...document.querySelectorAll(s)];
+            const vid = $("#vid"),
+                scan = $("#scan"),
+                mk = $("#marks");
+            const S = {
+                src: null,
+                url: null,
+                fileName: "",
+                stream: null,
+                mode: "rt",
+                state: "idle",
+                style: "hype",
+                char: 0,
+                rt: { on: false, busy: false, gen: 0, timer: null, errs: 0 },
+                recent: [],
+                timeline: null,
+                tlKey: "",
+                gen: { busy: false, ctl: null },
+                play: { on: false, last: -1 },
+                capLocked: false,
+                consented: false,
+                marks: [],
+                markAt: 0,
+            };
+            const LS = "aicaster-settings";
+            const save = () => {
+                try {
+                    localStorage.setItem(
+                        LS,
+                        JSON.stringify({
+                            char: S.char,
+                            style: S.style,
+                            iv: $("#iv").value,
+                            rate: $("#rate").value,
+                            vol: $("#vol").value,
+                            voice: $("#voiceSel").value,
+                            voiceOn: $("#voiceOn").checked,
+                            cap: $("#capSize").value,
+                            capBg: $("#capBg").value,
+                            capShow: $("#capShow").checked,
+                            markOn: $("#markOn").checked,
+                            model: $("#model").value,
+                        }),
+                    );
+                } catch (e) {}
+            };
+
+            /* ---------------- characters ---------------- */
+            const CHARS = [
+                {
+                    name: "민트봇",
+                    svg: `<svg viewBox="0 0 200 220"><g class="char-body">
+  <circle class="glow" cx="100" cy="95" r="92" fill="none" stroke="#3EE6C1" stroke-width="4" opacity=".0"/>
+  <line x1="100" y1="22" x2="100" y2="40" stroke="#CFE9F2" stroke-width="5"/><circle cx="100" cy="18" r="9" fill="#3EE6C1"/>
+  <rect x="38" y="40" width="124" height="104" rx="44" fill="#F4FAFC"/>
+  <rect x="26" y="78" width="18" height="40" rx="9" fill="#3EE6C1"/><rect x="156" y="78" width="18" height="40" rx="9" fill="#3EE6C1"/>
+  <path d="M40 92 Q40 34 100 34 Q160 34 160 92" fill="none" stroke="#2C3E5C" stroke-width="7"/>
+  <rect x="54" y="62" width="92" height="60" rx="28" fill="#0E2140"/>
+  <path d="M70 92 q10 -14 20 0" stroke="#3EE6C1" stroke-width="7" fill="none" stroke-linecap="round"/>
+  <path d="M110 92 q10 -14 20 0" stroke="#3EE6C1" stroke-width="7" fill="none" stroke-linecap="round"/>
+  <ellipse class="mouth" cx="100" cy="108" rx="12" ry="5" fill="#3EE6C1"/>
+  <path d="M164 112 q8 20 -20 24" stroke="#2C3E5C" stroke-width="4" fill="none"/><circle cx="142" cy="136" r="5" fill="#2C3E5C"/>
+  <rect x="58" y="146" width="84" height="62" rx="26" fill="#F4FAFC"/>
+  <text x="100" y="186" text-anchor="middle" font-size="26" font-weight="900" fill="#3EE6C1" font-family="Noto Sans KR,sans-serif">AI</text>
+  <rect x="30" y="152" width="22" height="46" rx="11" fill="#E3EEF3"/><rect x="148" y="140" width="22" height="46" rx="11" fill="#E3EEF3" transform="rotate(-20 159 163)"/>
+ </g></svg>`,
+                },
+                {
+                    name: "콕콕이",
+                    svg: `<svg viewBox="0 0 200 220"><g class="char-body">
+  <circle class="glow" cx="100" cy="110" r="92" fill="none" stroke="#3EE6C1" stroke-width="4"/>
+  <path d="M100 118 L40 22 Q70 8 100 14 Q130 8 160 22 Z" fill="#F4FAFC" stroke="#CFE0EA" stroke-width="3"/>
+  <path d="M100 118 L62 18 M100 118 L84 12 M100 118 L116 12 M100 118 L138 18" stroke="#CFE0EA" stroke-width="3"/>
+  <path d="M46 34 Q100 52 154 34" stroke="#3EE6C1" stroke-width="6" fill="none"/>
+  <rect x="58" y="104" width="84" height="16" rx="8" fill="#3EE6C1"/>
+  <circle cx="100" cy="158" r="50" fill="#FFFFFF"/>
+  <circle cx="82" cy="150" r="7" fill="#0E2140"/><circle cx="118" cy="150" r="7" fill="#0E2140"/>
+  <circle cx="84" cy="148" r="2.2" fill="#fff"/><circle cx="120" cy="148" r="2.2" fill="#fff"/>
+  <circle cx="70" cy="166" r="7" fill="#FFC9D2"/><circle cx="130" cy="166" r="7" fill="#FFC9D2"/>
+  <ellipse class="mouth" cx="100" cy="174" rx="11" ry="7" fill="#0E2140"/>
+ </g></svg>`,
+                },
+                {
+                    name: "곰캐스터",
+                    svg: `<svg viewBox="0 0 200 220"><g class="char-body">
+  <circle class="glow" cx="100" cy="110" r="92" fill="none" stroke="#3EE6C1" stroke-width="4"/>
+  <circle cx="50" cy="56" r="24" fill="#C98B5B"/><circle cx="150" cy="56" r="24" fill="#C98B5B"/>
+  <circle cx="50" cy="56" r="11" fill="#E9B88E"/><circle cx="150" cy="56" r="11" fill="#E9B88E"/>
+  <circle cx="100" cy="104" r="66" fill="#D49A6A"/>
+  <path d="M38 96 Q38 30 100 30 Q162 30 162 96" fill="none" stroke="#1B2B4A" stroke-width="8"/>
+  <rect x="26" y="84" width="20" height="36" rx="10" fill="#3EE6C1"/><rect x="154" y="84" width="20" height="36" rx="10" fill="#3EE6C1"/>
+  <circle cx="78" cy="96" r="8" fill="#1B1B24"/><circle cx="122" cy="96" r="8" fill="#1B1B24"/>
+  <circle cx="80" cy="93" r="2.5" fill="#fff"/><circle cx="124" cy="93" r="2.5" fill="#fff"/>
+  <ellipse cx="100" cy="126" rx="30" ry="22" fill="#F1D3B4"/>
+  <ellipse cx="100" cy="116" rx="9" ry="6" fill="#3A2418"/>
+  <ellipse class="mouth" cx="100" cy="134" rx="9" ry="6" fill="#7A2E2E"/>
+  <path d="M168 110 q6 22 -24 28" stroke="#1B2B4A" stroke-width="4" fill="none"/><circle cx="142" cy="138" r="5" fill="#1B2B4A"/>
+  <rect x="64" y="168" width="72" height="44" rx="20" fill="#1B2B4A"/><text x="100" y="198" text-anchor="middle" font-size="18" font-weight="900" fill="#3EE6C1" font-family="Noto Sans KR,sans-serif">CAST</text>
+ </g></svg>`,
+                },
+            ];
+            function renderChar() {
+                $("#charbox").innerHTML = CHARS[S.char].svg;
+                $("#chars").innerHTML = CHARS.map(
+                    (c, i) =>
+                        `<button data-i="${i}" aria-pressed="${i === S.char}">${c.svg}${c.name}</button>`,
+                ).join("");
+            }
+            $("#wave").innerHTML = Array.from(
+                { length: 22 },
+                (_, i) => `<i style="animation-delay:${(i % 7) * 0.07}s"></i>`,
+            ).join("");
+            function talking(on) {
+                $("#charbox").classList.toggle("talk", on);
+                $("#side").classList.toggle("talking", on);
+            }
+            $("#charBtn").onclick = () => {
+                S.char = (S.char + 1) % CHARS.length;
+                renderChar();
+                save();
+            };
+            $("#chars").onclick = (e) => {
+                const b = e.target.closest("button");
+                if (!b) return;
+                S.char = +b.dataset.i;
+                renderChar();
+                save();
+            };
+
+            /* ---------------- status ---------------- */
+            const STATE_TXT = {
+                idle: "입력 대기",
+                ready: "중계 준비 완료",
+                busy: "분석 중",
+                live: "중계 중",
+                pause: "일시정지",
+                end: "영상 종료",
+                err: "연결 오류",
+                gen: "중계 만드는 중",
+            };
+            function setState(s, detail) {
+                S.state = s;
+                $("#pillTxt").textContent = STATE_TXT[s] || s;
+                $("#pill").dataset.s =
+                    s === "live"
+                        ? "live"
+                        : s === "busy" || s === "gen"
+                          ? "busy"
+                          : s === "err"
+                            ? "err"
+                            : s === "pause"
+                              ? "pause"
+                              : "idle";
+                const cs = $("#cstate");
+                cs.classList.toggle("dots", s === "busy" || s === "gen");
+                cs.textContent =
+                    detail ||
+                    {
+                        idle: "준비됐어요",
+                        ready: "중계할 준비가 됐어요",
+                        busy: "경기를 분석하고 있어요",
+                        live: "경기를 중계하고 있어요",
+                        pause: "잠시 쉬는 중이에요",
+                        end: "경기가 끝났어요",
+                        err: "연결에 문제가 생겼어요",
+                        gen: "중계를 미리 만드는 중이에요",
+                    }[s];
+                updateButtons();
+            }
+            function updateButtons() {
+                const hasSrc = !!S.src,
+                    mb = $("#mainBtn");
+                $("#mGen").disabled = S.src === "cam";
+                $("#stopBtn").disabled = !(S.rt.on || S.play.on || S.gen.busy);
+                mb.disabled = !hasSrc;
+                if (S.mode === "rt") {
+                    mb.textContent = S.rt.on
+                        ? S.state === "pause"
+                            ? "▶ 중계 재개"
+                            : "❚❚ 중계 일시정지"
+                        : "▶ 중계 시작";
+                } else {
+                    if (S.gen.busy) mb.textContent = "■ 만들기 멈춤";
+                    else if (!S.timeline) mb.textContent = "✦ 중계 만들기";
+                    else
+                        mb.textContent =
+                            S.play.on && !vid.paused
+                                ? "❚❚ 일시정지"
+                                : "▶ 중계 재생";
+                }
+                $("#capLabel").textContent =
+                    S.mode === "rt" ? "실시간 중계" : "미리 생성 중계";
+            }
+            let toastTimer = null;
+            function toast(msg, { retry = null, info = false } = {}) {
+                const t = $("#toast");
+                t.hidden = false;
+                t.classList.toggle("info", info);
+                $("#toastTxt").textContent = msg;
+                $("#toastBtn").hidden = !retry;
+                $("#toastBtn").onclick = () => {
+                    t.hidden = true;
+                    retry && retry();
+                };
+                clearTimeout(toastTimer);
+                if (!retry)
+                    toastTimer = setTimeout(() => (t.hidden = true), 6000);
+            }
+            $("#toastX").onclick = () => ($("#toast").hidden = true);
+
+            /* ---------------- caption ---------------- */
+            function setCaption(text, { force = false } = {}) {
+                if (!text) return false;
+                if (S.capLocked && !force) return false;
+                const el = $("#captext");
+                el.textContent = text;
+                el.classList.remove("fade");
+                void el.offsetWidth;
+                el.classList.add("fade");
+                return true;
+            }
+            $("#editBtn").onclick = () => {
+                const el = $("#captext");
+                if (el.contentEditable === "true") {
+                    finishEdit();
+                    return;
+                }
+                el.contentEditable = "true";
+                el.focus();
+                document.getSelection().selectAllChildren(el);
+                $("#editBtn").textContent = "✓ 완료";
+            };
+            function finishEdit() {
+                const el = $("#captext");
+                el.contentEditable = "false";
+                $("#editBtn").textContent = "✎ 수정";
+                if ($("#capLock").checked) {
+                    S.capLocked = true;
+                    $("#autoBtn").hidden = false;
+                }
+            }
+            $("#captext").addEventListener("keydown", (e) => {
+                if (e.key === "Enter") {
+                    e.preventDefault();
+                    finishEdit();
+                }
+            });
+            $("#autoBtn").onclick = () => {
+                S.capLocked = false;
+                $("#autoBtn").hidden = true;
+                $("#capLock").checked = false;
+            };
+            function applyCapStyle() {
+                const r = document.documentElement.style;
+                r.setProperty("--capSize", $("#capSize").value + "px");
+                r.setProperty("--capBg", `rgba(18,35,71,${$("#capBg").value})`);
+                $("#capOut").textContent = $("#capSize").value;
+                $("#bgOut").textContent =
+                    Math.round($("#capBg").value * 100) + "%";
+                $("#caption").style.visibility = $("#capShow").checked
+                    ? "visible"
+                    : "hidden";
+            }
+            ["capSize", "capBg", "capShow"].forEach((id) =>
+                $("#" + id).addEventListener("input", () => {
+                    applyCapStyle();
+                    save();
+                }),
+            );
+            $("#capReset").onclick = () => {
+                $("#capSize").value = 44;
+                $("#capBg").value = 0.92;
+                $("#capShow").checked = true;
+                applyCapStyle();
+                save();
+            };
+
+            /* ---------------- speech ---------------- */
+            const hasTTS = "speechSynthesis" in window;
+            let voices = [];
+            function loadVoices() {
+                if (!hasTTS) {
+                    $("#voiceNote").textContent =
+                        "이 브라우저는 음성 읽기를 지원하지 않아요. 자막으로만 중계해요.";
+                    return;
+                }
+                voices = speechSynthesis.getVoices();
+                const ko = voices.filter((v) => /^ko/i.test(v.lang));
+                const list = ko.length ? ko : voices;
+                const keep =
+                    $("#voiceSel").value || (saved && saved.voice) || "";
+                $("#voiceSel").innerHTML = list
+                    .map(
+                        (v) =>
+                            `<option value="${v.name}">${v.name}${v.localService ? "" : " (온라인)"}</option>`,
+                    )
+                    .join("");
+                if (keep && list.some((v) => v.name === keep))
+                    $("#voiceSel").value = keep;
+                $("#voiceNote").textContent = ko.length
+                    ? `한국어 목소리 ${ko.length}개를 찾았어요.`
+                    : "한국어 목소리를 찾지 못했어요. 운영체제 설정에서 한국어 음성을 추가하면 더 자연스러워요.";
+            }
+            if (hasTTS) {
+                speechSynthesis.onvoiceschanged = loadVoices;
+            }
+            function speak(text) {
+                if (!hasTTS || !$("#voiceOn").checked || !text) return;
+                speechSynthesis.cancel();
+                const u = new SpeechSynthesisUtterance(text);
+                u.lang = "ko-KR";
+                const v = voices.find((v) => v.name === $("#voiceSel").value);
+                if (v) u.voice = v;
+                u.rate = +$("#rate").value;
+                u.volume = +$("#vol").value;
+                u.onstart = () => talking(true);
+                u.onend = u.onerror = () => talking(false);
+                try {
+                    speechSynthesis.speak(u);
+                } catch (e) {
+                    talking(false);
+                }
+                // some engines never fire onstart; show talking for a rough duration anyway
+                talking(true);
+                clearTimeout(speak.t);
+                speak.t = setTimeout(
+                    () => {
+                        if (!speechSynthesis.speaking) talking(false);
+                    },
+                    Math.max(1500, (text.length * 170) / u.rate),
+                );
+            }
+            function shutUp() {
+                if (hasTTS) speechSynthesis.cancel();
+                talking(false);
+            }
+            function present(text, marks) {
+                const shown = setCaption(text);
+                if (shown) speak(text);
+                if (text) {
+                    S.recent.push(text);
+                    if (S.recent.length > 4) S.recent.shift();
+                }
+                if (marks && marks.length) {
+                    S.marks = marks;
+                    S.markAt = performance.now();
+                }
+            }
+            $("#voiceBtn").onclick = () => {
+                $("#voiceOn").checked = !$("#voiceOn").checked;
+                syncVoiceBtn();
+                if (!$("#voiceOn").checked) shutUp();
+                save();
+            };
+            function syncVoiceBtn() {
+                $("#voiceBtn").textContent = $("#voiceOn").checked
+                    ? "🔊 음성 켜짐"
+                    : "🔇 음성 꺼짐";
+            }
+            $("#voiceOn").onchange = () => {
+                syncVoiceBtn();
+                if (!$("#voiceOn").checked) shutUp();
+                save();
+            };
+            $("#rate").oninput = () => {
+                $("#rateOut").textContent = $("#rate").value;
+                save();
+            };
+            $("#vol").oninput = () => {
+                $("#volOut").textContent =
+                    Math.round($("#vol").value * 100) + "%";
+                save();
+            };
+            $("#voiceSel").onchange = save;
+            $("#voiceTest").onclick = () => {
+                const t =
+                    "멋진 스매시입니다! 상대 코트의 빈 공간을 정확히 노렸어요.";
+                const was = $("#voiceOn").checked;
+                $("#voiceOn").checked = true;
+                speak(t);
+                $("#voiceOn").checked = was;
+            };
+
+            /* ---------------- marks overlay ---------------- */
+            function drawMarks() {
+                const dpr = window.devicePixelRatio || 1,
+                    w = Math.round(mk.clientWidth * dpr),
+                    h = Math.round(mk.clientHeight * dpr);
+                if (mk.width !== w || mk.height !== h) {
+                    mk.width = w;
+                    mk.height = h;
+                }
+                const c = mk.getContext("2d");
+                c.clearRect(0, 0, w, h);
+                if (!$("#markOn").checked || !S.marks.length || !S.src) return;
+                const age = (performance.now() - S.markAt) / 1000;
+                if (age > 3.2) return;
+                const vw = vid.videoWidth,
+                    vh = vid.videoHeight;
+                if (!vw) return;
+                const sc = Math.min(w / vw, h / vh),
+                    dw = vw * sc,
+                    dh = vh * sc,
+                    ox = (w - dw) / 2,
+                    oy = (h - dh) / 2;
+                c.globalAlpha = age > 2.4 ? Math.max(0, (3.2 - age) / 0.8) : 1;
+                S.marks.slice(0, 3).forEach((m) => {
+                    const b = m.box_2d || m.box;
+                    if (!Array.isArray(b) || b.length !== 4) return;
+                    let [y0, x0, y1, x1] = b.map(Number);
+                    if ([y0, x0, y1, x1].some(isNaN)) return;
+                    const X = ox + (x0 / 1000) * dw,
+                        Y = oy + (y0 / 1000) * dh,
+                        W = ((x1 - x0) / 1000) * dw,
+                        H = ((y1 - y0) / 1000) * dh;
+                    if (W < 2 || H < 2) return;
+                    const r = 10 * dpr;
+                    c.lineWidth = 4 * dpr;
+                    c.strokeStyle = "#3EE6C1";
+                    c.shadowColor = "rgba(62,230,193,.8)";
+                    c.shadowBlur = 14 * dpr;
+                    c.beginPath();
+                    c.roundRect
+                        ? c.roundRect(X, Y, W, H, r)
+                        : c.rect(X, Y, W, H);
+                    c.stroke();
+                    c.shadowBlur = 0;
+                    const label = String(m.label || "").slice(0, 10);
+                    if (label) {
+                        c.font = `900 ${16 * dpr}px "Noto Sans KR",sans-serif`;
+                        const tw = c.measureText(label).width + 16 * dpr,
+                            th = 26 * dpr;
+                        const ly =
+                            Y - th - 4 * dpr < oy
+                                ? Y + 4 * dpr
+                                : Y - th - 4 * dpr;
+                        c.fillStyle = "#3EE6C1";
+                        c.beginPath();
+                        c.roundRect
+                            ? c.roundRect(X, ly, tw, th, 8 * dpr)
+                            : c.rect(X, ly, tw, th);
+                        c.fill();
+                        c.fillStyle = "#062A24";
+                        c.textBaseline = "middle";
+                        c.fillText(label, X + 8 * dpr, ly + th / 2 + 1);
+                    }
+                });
+                c.globalAlpha = 1;
+            }
+            $("#markOn").onchange = save;
+
+            /* ---------------- inputs ---------------- */
+            $$('[data-act="pick"]').forEach(
+                (b) => (b.onclick = () => $("#file").click()),
+            );
+            $("#file").onchange = (e) => {
+                const f = e.target.files[0];
+                if (f) useFile(f);
+                e.target.value = "";
+            };
+            function stopAll() {
+                rtStop();
+                genCancel();
+                playStop();
+                shutUp();
+                S.marks = [];
+                S.recent = [];
+                if (S.stream) {
+                    S.stream.getTracks().forEach((t) => t.stop());
+                    S.stream = null;
+                }
+                vid.onerror = null;
+                vid.onloadedmetadata = null;
+                vid.pause();
+                vid.removeAttribute("src");
+                vid.srcObject = null;
+                vid.load();
+            }
+            function useFile(f) {
+                stopAll();
+                if (S.url) URL.revokeObjectURL(S.url);
+                S.url = URL.createObjectURL(f);
+                S.fileName = f.name;
+                S.src = "file";
+                S.timeline = null;
+                S.tlKey = f.name + "|" + f.size;
+                vid.srcObject = null;
+                vid.src = S.url;
+                vid.controls = true;
+                vid.muted = false;
+                scan.src = S.url;
+                vid.onerror = () => {
+                    toast(
+                        "이 영상은 재생할 수 없어요. MP4(H.264) 파일로 바꿔서 다시 골라 주세요.",
+                    );
+                    S.src = null;
+                    showEmpty(true);
+                    setState("idle");
+                };
+                vid.onloadedmetadata = () => {
+                    showEmpty(false);
+                    setState("ready");
+                };
+                $("#badge").hidden = false;
+                $("#badge").textContent = "영상 중계";
+                $("#badge").classList.add("file");
+                $("#fname").hidden = false;
+                $("#fname").textContent = f.name;
+                $("#camBtn").textContent = "● 웹캠 켜기";
+                $("#capProg").textContent = "";
+            }
+            async function useCam() {
+                if (S.src === "cam") {
+                    stopAll();
+                    S.src = null;
+                    showEmpty(true);
+                    $("#badge").hidden = true;
+                    $("#camBtn").textContent = "● 웹캠 켜기";
+                    setState("idle");
+                    return;
+                }
+                if (
+                    !navigator.mediaDevices ||
+                    !navigator.mediaDevices.getUserMedia
+                ) {
+                    toast(
+                        "이 브라우저에서는 웹캠을 쓸 수 없어요. 크롬에서 열어 주세요.",
+                    );
+                    return;
+                }
+                stopAll();
+                try {
+                    const devId = S.camId;
+                    const stream = await navigator.mediaDevices.getUserMedia({
+                        video: devId
+                            ? { deviceId: { exact: devId } }
+                            : {
+                                  width: { ideal: 1280 },
+                                  height: { ideal: 720 },
+                              },
+                        audio: false,
+                    });
+                    S.stream = stream;
+                    S.src = "cam";
+                    vid.controls = false;
+                    vid.srcObject = stream;
+                    vid.muted = true;
+                    await vid.play().catch(() => {});
+                    showEmpty(false);
+                    $("#badge").hidden = false;
+                    $("#badge").textContent = "LIVE";
+                    $("#badge").classList.remove("file");
+                    $("#fname").hidden = true;
+                    $("#camBtn").textContent = "● 웹캠 끄기";
+                    setMode("rt");
+                    setState("ready");
+                    const cams = (
+                        await navigator.mediaDevices.enumerateDevices()
+                    ).filter((d) => d.kind === "videoinput");
+                    if (cams.length > 1) {
+                        const cur = stream
+                            .getVideoTracks()[0]
+                            .getSettings().deviceId;
+                        const i = cams.findIndex((c) => c.deviceId === cur);
+                        S.camList = cams;
+                        toast(
+                            `카메라 ${cams.length}대를 찾았어요. 다른 카메라는 「웹캠 끄기」 뒤 다시 켜면 돌아가며 바뀌어요.`,
+                            { info: true },
+                        );
+                        S.camId = cams[(i + 1) % cams.length].deviceId;
+                    }
+                } catch (e) {
+                    const n = e && e.name;
+                    toast(
+                        n === "NotAllowedError"
+                            ? "카메라 사용이 허락되지 않았어요. 주소창의 카메라 아이콘에서 허용해 주세요. Claude 화면 안에서 막히면 HTML 파일을 내려받아 크롬으로 열어 주세요."
+                            : n === "NotFoundError"
+                              ? "연결된 카메라를 찾지 못했어요."
+                              : n === "NotReadableError"
+                                ? "다른 프로그램이 카메라를 쓰고 있어요. 그 프로그램을 닫고 다시 켜 주세요."
+                                : "웹캠을 켜지 못했어요. (" +
+                                  ((e && e.message) || n) +
+                                  ")",
+                    );
+                    S.src = null;
+                    showEmpty(true);
+                    setState("idle");
+                }
+            }
+            $$('[data-act="cam"]').forEach((b) => (b.onclick = useCam));
+            function showEmpty(on) {
+                $("#empty").hidden = !on;
+                if (on) {
+                    $("#badge").hidden = true;
+                    $("#fname").hidden = true;
+                }
+            }
+
+            /* ---------------- mode ---------------- */
+            function setMode(m) {
+                if (m === "gen" && S.src === "cam") return;
+                const changed = m !== S.mode;
+                S.mode = m;
+                if (changed) {
+                    rtStop();
+                    playStop();
+                    genCancel();
+                }
+                $("#mRt").setAttribute("aria-pressed", m === "rt");
+                $("#mGen").setAttribute("aria-pressed", m === "gen");
+                $("#capProg").textContent =
+                    m === "gen" && S.timeline
+                        ? `준비된 중계 ${S.timeline.length}개`
+                        : "";
+                updateButtons();
+            }
+            $("#mRt").onclick = () => setMode("rt");
+            $("#mGen").onclick = () => setMode("gen");
+
+            /* ---------------- frame capture ---------------- */
+            const cap = document.createElement("canvas");
+            function grab(el, w = 768) {
+                const vw = el.videoWidth,
+                    vh = el.videoHeight;
+                if (!vw) return null;
+                const s = Math.min(1, w / vw);
+                cap.width = Math.round(vw * s);
+                cap.height = Math.round(vh * s);
+                cap.getContext("2d").drawImage(el, 0, 0, cap.width, cap.height);
+                return cap.toDataURL("image/jpeg", 0.72).split(",")[1];
+            }
+            const b64toBlob = (b) => {
+                const s = atob(b),
+                    a = new Uint8Array(s.length);
+                for (let i = 0; i < s.length; i++) a[i] = s.charCodeAt(i);
+                return new Blob([a], { type: "image/jpeg" });
+            };
+
+            /* ---------------- Gemini ---------------- */
+            const FALLBACK_MODELS = [
+                "gemini-3.8-flash",
+                "gemini-2.0-flash",
+                "gemini-flash-latest",
+            ];
+            const AI = { noThink: true };
+            const KEY = "aicaster-gemini-key";
+            try {
+                const k = localStorage.getItem(KEY);
+                if (k) {
+                    $("#key").value = k;
+                    $("#remember").checked = true;
+                }
+            } catch (e) {}
+            function keySave() {
+                try {
+                    if ($("#remember").checked && $("#key").value.trim())
+                        localStorage.setItem(KEY, $("#key").value.trim());
+                    else localStorage.removeItem(KEY);
+                } catch (e) {}
+            }
+            $("#remember").onchange = keySave;
+            $("#key").onchange = keySave;
+            $("#forgetKey").onclick = () => {
+                $("#key").value = "";
+                $("#remember").checked = false;
+                keySave();
+                $("#keyMsg").className = "msg";
+                $("#keyMsg").textContent = "키를 지웠어요.";
+            };
+            $("#model").onchange = save;
+            const apiKey = () => $("#key").value.trim();
+            async function gemFetch(model, body, signal) {
+                const res = await fetch(
+                    `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,
+                    {
+                        method: "POST",
+                        signal,
+                        headers: {
+                            "Content-Type": "application/json",
+                            "x-goog-api-key": apiKey(),
+                        },
+                        body: JSON.stringify(body),
+                    },
+                );
+                let j = null;
+                try {
+                    j = await res.json();
+                } catch (e) {}
+                if (Array.isArray(j)) j = j[0];
+                if (!res.ok) {
+                    const err = new Error(
+                        (j && j.error && j.error.message) || res.statusText,
+                    );
+                    err.status = res.status;
+                    throw err;
+                }
+                const c = j && j.candidates && j.candidates[0];
+                return {
+                    text: ((c && c.content && c.content.parts) || [])
+                        .filter((p) => !p.thought)
+                        .map((p) => p.text || "")
+                        .join("")
+                        .trim(),
+                    finish: c && c.finishReason,
+                };
+            }
+            async function listModels(signal) {
+                try {
+                    const r = await fetch(
+                        "https://generativelanguage.googleapis.com/v1beta/models?pageSize=200",
+                        { headers: { "x-goog-api-key": apiKey() }, signal },
+                    );
+                    if (!r.ok) return [];
+                    const j = await r.json();
+                    return (j.models || [])
+                        .filter((m) =>
+                            (m.supportedGenerationMethods || []).includes(
+                                "generateContent",
+                            ),
+                        )
+                        .map((m) => m.name.replace(/^models\//, ""))
+                        .filter(
+                            (n) =>
+                                /^gemini/.test(n) &&
+                                !/(image|tts|live|audio|embedding|native|computer-use|robotics)/.test(
+                                    n,
+                                ),
+                        )
+                        .sort(
+                            (a, b) =>
+                                (/flash/.test(b) ? 2 : 0) -
+                                    (/lite/.test(b) ? 1 : 0) -
+                                    ((/flash/.test(a) ? 2 : 0) -
+                                        (/lite/.test(a) ? 1 : 0)) ||
+                                b.localeCompare(a, undefined, {
+                                    numeric: true,
+                                }),
+                        );
+                } catch (e) {
+                    return [];
+                }
+            }
+            async function gemini(parts, { signal, maxTok = 2048 } = {}) {
+                const mk = (tok) => {
+                    const g = {
+                        temperature: 0.8,
+                        maxOutputTokens: tok,
+                        responseMimeType: "application/json",
+                    };
+                    if (AI.noThink) g.thinkingConfig = { thinkingBudget: 0 };
+                    return {
+                        contents: [{ role: "user", parts }],
+                        generationConfig: g,
+                    };
+                };
+                let model = $("#model").value.trim() || FALLBACK_MODELS[0];
+                const run = async (m) => {
+                    let r;
+                    try {
+                        r = await gemFetch(m, mk(maxTok), signal);
+                    } catch (e) {
+                        if (
+                            e.status === 400 &&
+                            /think/i.test(e.message) &&
+                            AI.noThink
+                        ) {
+                            AI.noThink = false;
+                            r = await gemFetch(m, mk(maxTok), signal);
+                        } else throw e;
+                    }
+                    if (r.finish === "MAX_TOKENS" || !r.text) {
+                        const r2 = await gemFetch(m, mk(maxTok * 4), signal);
+                        if (r2.text.length > r.text.length) r = r2;
+                    }
+                    return r.text;
+                };
+                try {
+                    return await run(model);
+                } catch (e) {
+                    if (e.name === "AbortError") throw e;
+                    const sug = (e.message || "").match(
+                        /use\s+(?:models\/)?(gemini-[\w.-]*\w)/i,
+                    );
+                    const notFound =
+                        e.status === 404 ||
+                        /no longer available|not found|deprecat/i.test(
+                            e.message || "",
+                        );
+                    if (!notFound && !sug) throw e;
+                    const cands = [
+                        ...(sug ? [sug[1]] : []),
+                        ...(await listModels(signal)),
+                        ...FALLBACK_MODELS,
+                    ].filter((m, i, a) => m !== model && a.indexOf(m) === i);
+                    let last = e;
+                    for (const m of cands.slice(0, 5)) {
+                        try {
+                            const t = await run(m);
+                            $("#model").value = m;
+                            save();
+                            return t;
+                        } catch (e2) {
+                            if (e2.name === "AbortError") throw e2;
+                            last = e2;
+                            if (
+                                !(
+                                    e2.status === 404 ||
+                                    /no longer available|not found/i.test(
+                                        e2.message || "",
+                                    )
+                                )
+                            )
+                                break;
+                        }
+                    }
+                    throw last;
+                }
+            }
+            function parseJSON(t) {
+                if (!t) return null;
+                t = t.replace(/```json|```/g, "").trim();
+                try {
+                    return JSON.parse(t);
+                } catch (e) {}
+                const a = t.indexOf("{"),
+                    b = t.lastIndexOf("}");
+                if (a >= 0 && b > a) {
+                    try {
+                        return JSON.parse(t.slice(a, b + 1));
+                    } catch (e) {}
+                }
+                return null;
+            }
+            function friendly(e) {
+                const m = (e && e.message) || "";
+                if (e && e.status === 400 && /API key|API_KEY/i.test(m))
+                    return "API 키가 맞지 않아요. 설정에서 키를 다시 확인해 주세요.";
+                if (e && (e.status === 401 || e.status === 403))
+                    return "이 키로는 Gemini를 쓸 권한이 없어요. 키 설정을 확인해 주세요.";
+                if (e && e.status === 429)
+                    return "요청이 너무 많아 잠시 막혔어요. 분석 간격을 늘리거나 1분 뒤 다시 시도해 주세요.";
+                if (e && e.status) return `Gemini 오류(${e.status}): ${m}`;
+                if (
+                    location.protocol !== "file:" &&
+                    /claude/.test(location.hostname + document.referrer)
+                )
+                    return "Claude 화면 안에서는 Gemini에 연결할 수 없어요. HTML 파일을 내려받아 크롬으로 열어 주세요.";
+                return "인터넷 연결을 확인해 주세요. (" + m + ")";
+            }
+            $("#testKey").onclick = async () => {
+                const msg = $("#keyMsg");
+                if (!apiKey()) {
+                    msg.className = "msg bad";
+                    msg.textContent = "키를 먼저 넣어 주세요.";
+                    return;
+                }
+                msg.className = "msg";
+                msg.textContent = "확인하는 중...";
+                keySave();
+                try {
+                    const t = await gemini(
+                        [{ text: '{"ok":true} 이 JSON을 그대로 출력해.' }],
+                        { maxTok: 64 },
+                    );
+                    msg.className = "msg ok";
+                    msg.textContent = `연결됐어요. (모델: ${$("#model").value})`;
+                } catch (e) {
+                    msg.className = "msg bad";
+                    msg.textContent =
+                        friendly(e) +
+                        (e.status ? `\n원래 메시지: ${e.message}` : "");
+                }
+            };
+
+            /* ---------------- prompts ---------------- */
+            const STYLE = {
+                hype: "활기차고 신나는 스포츠 캐스터. 감탄사를 살짝 섞어 생생하게",
+                calm: "차분하고 정확한 해설위원. 담백하게",
+                edu: "학생에게 설명하는 체육 선생님. 동작의 요령을 쉽게",
+            };
+            const markRule = () =>
+                $("#markOn").checked
+                    ? "marks에는 방금 말한 핵심 대상(셔틀콕을 치는 선수, 셔틀콕, 비어 있는 공간 등)을 최대 3개 넣어. box_2d는 [ymin, xmin, ymax, xmax]이고 0~1000 정수야. label은 4자 이내(예: 스매시, 셔틀콕, 빈 공간)."
+                    : "marks는 빈 배열로 둬.";
+            function rtPrompt() {
+                return `너는 배드민턴 경기를 중계하는 AI 캐스터야. 말투: ${STYLE[S.style]}.
+첨부한 사진은 ${S.src === "cam" ? "웹캠으로 비추고 있는" : "경기 영상의"} 지금 장면이야.
+규칙:
+1. 사진에 보이는 것만 근거로 말해. 점수, 선수 이름, 득점, 반칙은 확실히 보이지 않으면 말하지 마.
+2. caption은 한국어 한 문장, 공백 포함 35자 이내로 짧고 생생하게.
+3. 최근에 한 말: ${S.recent.length ? S.recent.map((s) => "「" + s + "」").join(" ") : "없음"}. 이와 비슷한 말은 반복하지 마.
+4. 경기 장면이 아니거나 변화가 거의 없으면 caption을 빈 문자열로 둬.
+5. ${markRule()}
+JSON만 출력: {"caption":"...","marks":[{"label":"...","box_2d":[0,0,0,0]}]}`;
+            }
+            function genPrompt(times, prev) {
+                return `너는 배드민턴 경기를 중계하는 AI 캐스터야. 말투: ${STYLE[S.style]}.
+첨부한 사진 ${times.length}장은 한 경기 영상에서 시간 순서대로 뽑은 장면이야. 각 사진의 시각(초): ${times.map((t, i) => `${i + 1}번=${t.toFixed(1)}`).join(", ")}.
+사진마다 그 순간에 나갈 중계 한 문장을 만들어. 앞뒤 장면을 이어서 보고 경기 흐름이 자연스럽게 이어지게 해.
+규칙:
+1. 사진에 보이는 것만 근거로 말해. 점수, 선수 이름, 득점, 반칙은 확실히 보이지 않으면 말하지 마.
+2. caption은 한국어 한 문장, 공백 포함 35자 이내.
+3. 바로 앞 장면과 거의 같으면 caption을 빈 문자열로 둬. 같은 말을 반복하지 마. 앞 구간에서 한 말: ${
+                    prev.length
+                        ? prev
+                              .slice(-3)
+                              .map((s) => "「" + s + "」")
+                              .join(" ")
+                        : "없음"
+                }.
+4. ${markRule()}
+JSON만 출력: {"items":[{"i":1,"caption":"...","marks":[{"label":"...","box_2d":[0,0,0,0]}]}]} items는 사진 수와 같게.`;
+            }
+
+            /* ---------------- realtime ---------------- */
+            function needConsent(go) {
+                if (S.consented) {
+                    go();
+                    return;
+                }
+                $("#consent").hidden = false;
+                $("#consentYes").onclick = () => {
+                    $("#consent").hidden = true;
+                    S.consented = true;
+                    go();
+                };
+                $("#consentNo").onclick = () => {
+                    $("#consent").hidden = true;
+                };
+            }
+            function rtStart() {
+                if (!apiKey()) {
+                    toast(
+                        "실시간 중계에는 Gemini API 키가 필요해요. 설정에서 넣어 주세요." +
+                            (sampleFn && S.src === "file"
+                                ? " Claude 화면에서는 「미리 생성 중계」를 키 없이 쓸 수 있어요."
+                                : ""),
+                    );
+                    openSet();
+                    return;
+                }
+                needConsent(() => {
+                    S.rt.on = true;
+                    S.rt.errs = 0;
+                    S.rt.gen++;
+                    S.recent = [];
+                    if (S.src === "file" && vid.paused)
+                        vid.play().catch(() => {});
+                    setState("live");
+                    rtSchedule(200);
+                });
+            }
+            function rtSchedule(ms) {
+                clearTimeout(S.rt.timer);
+                S.rt.timer = setTimeout(rtTick, ms);
+            }
+            async function rtTick() {
+                if (!S.rt.on || S.state === "pause") return;
+                if (S.rt.busy) {
+                    rtSchedule(300);
+                    return;
+                }
+                if (S.src === "file" && vid.ended) {
+                    setState("end");
+                    rtStop(true);
+                    return;
+                }
+                const frame = grab(vid);
+                if (!frame) {
+                    rtSchedule(500);
+                    return;
+                }
+                const g = S.rt.gen,
+                    t0 = performance.now(),
+                    vt = vid.currentTime;
+                S.rt.busy = true;
+                $("#cstate").classList.add("dots");
+                $("#pill").dataset.s = "busy";
+                S.rt.ctl = new AbortController();
+                try {
+                    const txt = await gemini(
+                        [
+                            { text: rtPrompt() },
+                            {
+                                inline_data: {
+                                    mime_type: "image/jpeg",
+                                    data: frame,
+                                },
+                            },
+                        ],
+                        { signal: S.rt.ctl.signal },
+                    );
+                    const dt = (performance.now() - t0) / 1000;
+                    $("#lat").textContent = `분석 ${dt.toFixed(1)}초`;
+                    if (g !== S.rt.gen || !S.rt.on || S.state === "pause")
+                        return;
+                    if (S.src === "file" && Math.abs(vid.currentTime - vt) > 8)
+                        return; // too old
+                    const r = parseJSON(txt) || {};
+                    S.rt.errs = 0;
+                    present((r.caption || "").trim(), r.marks);
+                    setState("live");
+                } catch (e) {
+                    if (e.name === "AbortError") return;
+                    S.rt.errs++;
+                    setState("err");
+                    if (S.rt.errs >= 3) {
+                        rtStop();
+                        toast(friendly(e), { retry: () => rtStart() });
+                        return;
+                    }
+                    toast(friendly(e));
+                } finally {
+                    S.rt.busy = false;
+                    if (S.rt.on && S.state !== "pause") {
+                        const iv = +$("#iv").value * 1000;
+                        rtSchedule(
+                            Math.max(300, iv - (performance.now() - t0)),
+                        );
+                    }
+                }
+            }
+            function rtPause() {
+                S.rt.gen++;
+                if (S.rt.ctl) S.rt.ctl.abort();
+                shutUp();
+                if (S.src === "file") vid.pause();
+                setState("pause");
+            }
+            function rtResume() {
+                S.rt.gen++;
+                if (S.src === "file") vid.play().catch(() => {});
+                setState("live");
+                rtSchedule(200);
+            }
+            function rtStop(keepState) {
+                S.rt.on = false;
+                S.rt.gen++;
+                clearTimeout(S.rt.timer);
+                if (S.rt.ctl) S.rt.ctl.abort();
+                S.rt.busy = false;
+                if (!keepState && S.src) setState("ready");
+                updateButtons();
+            }
+            vid.addEventListener("seeking", () => {
+                if (S.rt.on) {
+                    S.rt.gen++;
+                    if (S.rt.ctl) S.rt.ctl.abort();
+                    shutUp();
+                }
+                if (S.play.on) {
+                    S.play.last = -1;
+                    shutUp();
+                }
+                S.marks = [];
+            });
+            vid.addEventListener("pause", () => {
+                if (S.src !== "file") return;
+                if (S.rt.on && S.state === "live" && !vid.ended) rtPause();
+                if (S.play.on) {
+                    shutUp();
+                    updateButtons();
+                }
+            });
+            vid.addEventListener("play", () => {
+                if (S.rt.on && S.state === "pause") rtResume();
+                updateButtons();
+            });
+            vid.addEventListener("ended", () => {
+                if (S.rt.on) {
+                    rtStop(true);
+                    setState("end");
+                }
+                if (S.play.on) {
+                    S.play.on = false;
+                    setState("end");
+                }
+            });
+
+            /* ---------------- pre-generated ---------------- */
+            let sampleFn = null,
+                sampleLimits = null;
+            (async () => {
+                try {
+                    if (window.claude && window.claude.use) {
+                        sampleFn = await window.claude.use("sample");
+                        if (sampleFn && sampleFn.limits)
+                            sampleLimits = await sampleFn.limits();
+                    }
+                } catch (e) {
+                    sampleFn = null;
+                }
+                if (sampleFn) $("#claudeNote").hidden = false;
+            })();
+            function seekScan(t) {
+                return new Promise((res) => {
+                    let done = false;
+                    const f = () => {
+                        if (done) return;
+                        done = true;
+                        scan.removeEventListener("seeked", f);
+                        res();
+                    };
+                    scan.addEventListener("seeked", f);
+                    setTimeout(f, 4000);
+                    scan.currentTime = Math.min(
+                        t,
+                        Math.max(0, scan.duration - 0.05),
+                    );
+                });
+            }
+            function genCancel() {
+                if (S.gen.ctl) S.gen.ctl.abort();
+                S.gen.busy = false;
+                $("#capProg").textContent = S.timeline
+                    ? `준비된 중계 ${S.timeline.length}개`
+                    : "";
+            }
+            async function genBuild() {
+                const useClaude =
+                    !apiKey() &&
+                    sampleFn &&
+                    sampleLimits &&
+                    sampleLimits.images;
+                if (!apiKey() && !useClaude) {
+                    toast(
+                        "중계를 만들려면 Gemini API 키가 필요해요. 설정에서 넣어 주세요.",
+                    );
+                    openSet();
+                    return;
+                }
+                needConsent(async () => {
+                    if (!scan.duration || isNaN(scan.duration))
+                        await new Promise((r) => {
+                            scan.onloadedmetadata = r;
+                            setTimeout(r, 3000);
+                        });
+                    const dur = scan.duration;
+                    if (!dur) {
+                        toast("영상 길이를 읽지 못했어요.");
+                        return;
+                    }
+                    const maxPts = useClaude
+                        ? Math.min(sampleLimits.images.maxCount || 10, 20)
+                        : 60;
+                    const step = Math.max(
+                        +$("#iv").value < 3 ? 3 : +$("#iv").value,
+                        dur / maxPts,
+                    );
+                    const times = [];
+                    for (let t = Math.min(1, dur / 2); t < dur - 0.3; t += step)
+                        times.push(t);
+                    S.gen.busy = true;
+                    S.gen.ctl = new AbortController();
+                    S.timeline = null;
+                    setState("gen");
+                    vid.pause();
+                    const out = [],
+                        prev = [];
+                    const BATCH = useClaude ? times.length : 5;
+                    try {
+                        for (let i = 0; i < times.length; i += BATCH) {
+                            const ts = times.slice(i, i + BATCH),
+                                frames = [];
+                            for (const t of ts) {
+                                await seekScan(t);
+                                frames.push(grab(scan, useClaude ? 640 : 640));
+                            }
+                            $("#capProg").textContent =
+                                `장면 ${Math.min(i + BATCH, times.length)} / ${times.length} 분석 중`;
+                            const prompt = genPrompt(ts, prev);
+                            let txt;
+                            if (useClaude) {
+                                const r = await sampleFn(prompt, {
+                                    images: frames.map(b64toBlob),
+                                    signal: S.gen.ctl.signal,
+                                });
+                                txt = r.text;
+                            } else {
+                                txt = await gemini(
+                                    [
+                                        { text: prompt },
+                                        ...frames.map((f) => ({
+                                            inline_data: {
+                                                mime_type: "image/jpeg",
+                                                data: f,
+                                            },
+                                        })),
+                                    ],
+                                    { signal: S.gen.ctl.signal, maxTok: 4096 },
+                                );
+                            }
+                            const r = parseJSON(txt) || {};
+                            const items = Array.isArray(r.items) ? r.items : [];
+                            ts.forEach((t, k) => {
+                                const it =
+                                    items.find((x) => +x.i === k + 1) ||
+                                    items[k] ||
+                                    {};
+                                const c = (it.caption || "").trim();
+                                out.push({
+                                    t,
+                                    caption: c,
+                                    marks: it.marks || [],
+                                });
+                                if (c) prev.push(c);
+                            });
+                            if (!S.gen.busy) return;
+                        }
+                        S.timeline = out.filter((x) => x.caption);
+                        S.gen.busy = false;
+                        $("#capProg").textContent =
+                            `준비된 중계 ${S.timeline.length}개`;
+                        setCaption(
+                            `중계 ${S.timeline.length}개를 만들었어요. 「중계 재생」을 눌러 보세요.`,
+                            { force: true },
+                        );
+                        setState("ready");
+                    } catch (e) {
+                        S.gen.busy = false;
+                        if (e.name === "AbortError") {
+                            setState("ready");
+                            return;
+                        }
+                        setState("err");
+                        const msg = e.code
+                            ? {
+                                  not_granted:
+                                      "Claude 사용이 허락되지 않았어요.",
+                                  rate_limited:
+                                      "요청이 많아 잠시 막혔어요. 잠시 뒤 다시 시도해 주세요.",
+                                  images_unavailable:
+                                      "이 화면에서는 이미지를 보낼 수 없어요.",
+                              }[e.code] || "Claude가 답하지 못했어요."
+                            : friendly(e);
+                        toast(msg, { retry: () => genBuild() });
+                    } finally {
+                        updateButtons();
+                    }
+                });
+            }
+            function playStart() {
+                S.play.on = true;
+                S.play.last = -1;
+                if (vid.ended || vid.currentTime >= vid.duration - 0.2)
+                    vid.currentTime = 0;
+                vid.play().catch(() => {});
+                setState("live");
+            }
+            function playStop() {
+                S.play.on = false;
+                S.play.last = -1;
+            }
+            function playTick() {
+                if (!S.play.on || !S.timeline || vid.paused) return;
+                const t = vid.currentTime;
+                let idx = -1;
+                for (let i = 0; i < S.timeline.length; i++) {
+                    if (S.timeline[i].t <= t + 0.15) idx = i;
+                    else break;
+                }
+                if (
+                    idx >= 0 &&
+                    idx !== S.play.last &&
+                    t - S.timeline[idx].t < 2.5
+                ) {
+                    S.play.last = idx;
+                    const it = S.timeline[idx];
+                    present(it.caption, it.marks);
+                } else if (idx !== S.play.last && idx >= 0) S.play.last = idx;
+            }
+
+            /* ---------------- main controls ---------------- */
+            $("#mainBtn").onclick = () => {
+                if (S.mode === "rt") {
+                    if (!S.rt.on) rtStart();
+                    else if (S.state === "pause") rtResume();
+                    else rtPause();
+                } else {
+                    if (S.gen.busy) {
+                        genCancel();
+                        setState("ready");
+                        updateButtons();
+                        return;
+                    }
+                    if (!S.timeline) {
+                        genBuild();
+                        return;
+                    }
+                    if (S.play.on && !vid.paused) {
+                        vid.pause();
+                        setState("pause");
+                    } else playStart();
+                }
+                updateButtons();
+            };
+            $("#stopBtn").onclick = () => {
+                rtStop();
+                genCancel();
+                if (S.play.on) {
+                    playStop();
+                    vid.pause();
+                }
+                shutUp();
+                S.marks = [];
+                setState(S.src ? "ready" : "idle");
+            };
+
+            /* ---------------- settings drawer ---------------- */
+            function openSet(sec) {
+                $("#drawer").hidden = false;
+                $("#scrim").hidden = false;
+                if (sec) $(sec).scrollIntoView({ block: "start" });
+                else $("#key").focus();
+            }
+            function closeSet() {
+                $("#drawer").hidden = true;
+                $("#scrim").hidden = true;
+            }
+            $("#setBtn").onclick = () => openSet();
+            $("#closeSet").onclick = closeSet;
+            $("#scrim").onclick = closeSet;
+            $("#capSetBtn").onclick = () => openSet("#capSection");
+            document.addEventListener("keydown", (e) => {
+                if (e.key === "Escape" && !$("#drawer").hidden) closeSet();
+            });
+            $("#iv").oninput = () => {
+                $("#ivOut").textContent = $("#iv").value + "초";
+                save();
+            };
+            $("#styleSeg").onclick = (e) => {
+                const b = e.target.closest("button");
+                if (!b) return;
+                S.style = b.dataset.v;
+                $$("#styleSeg button").forEach((x) =>
+                    x.setAttribute("aria-pressed", x === b),
+                );
+                save();
+            };
+            $("#resetAll").onclick = () => {
+                try {
+                    localStorage.removeItem(LS);
+                } catch (e) {}
+                location.reload();
+            };
+
+            /* ---------------- exhibition / fullscreen ---------------- */
+            $("#fsBtn").onclick = () => {
+                if (document.fullscreenElement) document.exitFullscreen();
+                else
+                    document.documentElement.requestFullscreen &&
+                        document.documentElement
+                            .requestFullscreen()
+                            .catch(() =>
+                                toast(
+                                    "전체화면을 쓸 수 없어요. 키보드의 F11을 눌러 보세요.",
+                                ),
+                            );
+            };
+            let idleT = null;
+            document.addEventListener("fullscreenchange", () => {
+                document.body.classList.toggle(
+                    "exhibit",
+                    !!document.fullscreenElement,
+                );
+                poke();
+            });
+            function poke() {
+                document.body.classList.remove("idle");
+                clearTimeout(idleT);
+                if (document.body.classList.contains("exhibit"))
+                    idleT = setTimeout(
+                        () => document.body.classList.add("idle"),
+                        3000,
+                    );
+            }
+            ["mousemove", "touchstart", "keydown"].forEach((ev) =>
+                document.addEventListener(ev, poke, { passive: true }),
+            );
+
+            /* ---------------- restore + loop ---------------- */
+            let saved = null;
+            try {
+                saved = JSON.parse(localStorage.getItem(LS) || "null");
+            } catch (e) {}
+            if (saved) {
+                S.char = saved.char | 0;
+                S.style = saved.style || "hype";
+                const set = (id, v) => {
+                    if (v != null) $("#" + id).value = v;
+                };
+                set("iv", saved.iv);
+                set("rate", saved.rate);
+                set("vol", saved.vol);
+                set("capSize", saved.cap);
+                set("capBg", saved.capBg);
+                set("model", saved.model);
+                if (saved.voiceOn != null)
+                    $("#voiceOn").checked = saved.voiceOn;
+                if (saved.capShow != null)
+                    $("#capShow").checked = saved.capShow;
+                if (saved.markOn != null) $("#markOn").checked = saved.markOn;
+            }
+            if (S.char >= CHARS.length) S.char = 0;
+            $$("#styleSeg button").forEach((x) =>
+                x.setAttribute("aria-pressed", x.dataset.v === S.style),
+            );
+            $("#ivOut").textContent = $("#iv").value + "초";
+            $("#rateOut").textContent = $("#rate").value;
+            $("#volOut").textContent = Math.round($("#vol").value * 100) + "%";
+            renderChar();
+            applyCapStyle();
+            syncVoiceBtn();
+            loadVoices();
+            setState("idle");
+            (function loop() {
+                requestAnimationFrame(loop);
+                playTick();
+                drawMarks();
+            })();
+        </script>
+    </body>
+</html>
